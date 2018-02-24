@@ -1,0 +1,23 @@
+extends layout
+
+block content
+    h1 Let's Get Started
+    hr
+    h2.text-light Step 1
+    ul.list-group
+        li.list-group-item
+            p.h5 First, Create your database in MySQL and name it anything you want.
+        li.list-group-item
+            p.h5 After the database has been created make sure to update the .env file.
+    br
+    h2.text-light Step 2
+    ul.list-group
+        li.list-group-item
+            p.h5 Once you have completed Step 1, Click on "Configure Database" button.
+    br
+    a.btn.btn-warning.btn-lg(href='/migrate/configureDB') Configure Database
+    br
+    br
+    if successMessage
+        div.alert.alert-dismissible.alert-success.text-center
+            h1 #{successMessage}

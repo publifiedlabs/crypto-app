@@ -1,0 +1,27 @@
+extends layout
+
+block content
+    h1 Register
+    hr
+    if errors
+        ul.list-group
+            each error in errors
+                li.list-group-item= error.msg
+    form(method='POST', action='/users/register')
+        #form-group
+            label Name
+            input.form-control(name='name', type='text', value=name)
+        #form-group
+            label Email
+            input.form-control(name='email', type='text', value=email)
+        #form-group
+            label Username
+            input.form-control(name='username', type='text', value=username)
+        #form-group
+            label Password
+            input.form-control(name='password', type='password')
+        #form-group
+            label Confirm Password
+            input.form-control(name='passwordMatch', type='password')
+            br
+            input.btn.btn-primary(type='submit', value='Submit')

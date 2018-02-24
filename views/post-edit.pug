@@ -1,0 +1,19 @@
+extends layout
+
+block content
+        h1 Update Post
+        hr
+        each post in posts
+            form(method='POST', action='/posts/update/' + post.id)
+                #form-group 
+                    label Title
+                    input.form-control(name='title', type='text', value=post.title)
+                #form-group 
+                    label Author
+                    input.form-control(name='author', type='text', value=post.author, readonly)
+                br
+                #form-group
+                    label Body
+                    textarea.form-control(name='body')= post.body
+                br
+                input.btn.btn-primary(type='submit', value='Update')

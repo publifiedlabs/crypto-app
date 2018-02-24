@@ -1,0 +1,28 @@
+header
+    nav.navbar.navbar-expand-lg.navbar-dark.bg-dark
+        a.navbar-brand(href="/") Crypto Calc
+        button.navbar-toggler(type="button", data-toggle="collapse", data-target="#navbarColor02", aria-controls="navbarColor02", aria-expanded="false", aria-label="Toggle navigation")
+            span.navbar-toggler-icon
+        div#navbarColor02.collapse.navbar-collapse
+            ul.navbar-nav.mr-auto
+                if isAuthenticated
+                    li.nav-item
+                        a.nav-link(href="/") Home
+                    li.nav-item
+                        a.nav-link(href="/users/currencies") Currencies
+                    li.nav-item
+                        a.nav-link(href="/posts") Posts
+                else
+                    li.nav-item
+                        a.nav-link(href="/") Home
+            ul.navbar-nav.float-right
+                if isAuthenticated
+                    li.nav-item
+                        a.nav-link(href="/users/profile") Profile
+                    li.nav-item
+                        a.nav-link(href="/users/logout") Logout                   
+                else
+                    li.nav-item
+                        a.nav-link(href="/users/login") Login
+                    li.nav-item
+                        a.nav-link(href="/users/register") Register

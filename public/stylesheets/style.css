@@ -1,0 +1,20 @@
+.pbf-crypto-container {
+  padding: 2em;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.container hr {
+  border-color: #fff;
+}
+
+.alert-error{
+  color: #a94442!important;
+  background-color: #f2dede;
+  border-color: #ebccd1;
+}
+
+.alert-success_msg{
+  color: #3c763d!important;
+  background-color: #dff0d8;
+  border-color: #d6e9c6;
+}

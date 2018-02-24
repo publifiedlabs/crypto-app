@@ -1,0 +1,29 @@
+extends layout
+
+block content
+        h1 Add A Post
+        hr
+        form(method='POST', action='/posts')
+            #form-group
+                label Title
+                input.form-control(name='title', type='text')
+            br
+            #form-group
+                label Body
+                textarea.form-control(name='body')
+                br
+                input.btn.btn-primary(type='submit', value='Submit')
+        br
+        each post in posts
+            ul.list-group
+                li.list-group-item
+                    h3
+                        a(href='/posts/' + post.id)= post.title
+                    each user in users
+                        if user.id == post.author
+                            small
+                                p created: #{post.createdOn}
+                            p.text-warning by: #{user.name}
+                                //- a.btn.btn-danger.float-right(href='/posts/delete/' + post.id) Delete
+                                //- a.btn.btn-primary.float-right(href='/posts/update/' + post.id) Update
+        br

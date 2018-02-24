@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  div#pbf-main-container
+    div.jumbotron
+      div.container
+        if isAuthenticated
+          h1.display-3.text-center Welcome! #{users[0].name}
+        else
+          h1.display-3.text-center Welcome!
+        p.lead.text-center The Crypto Currency Calculator lets you easily manage your crypto currencies worth, all in one place.
+        if isAuthenticated
+          p.lead.text-center
+            a.btn.btn-primary.btn-lg.btn-success(href="/users/currencies", role="button") Currencies
+            a.btn.btn-primary.btn-lg(href="/users/profile", role="button") Profile
+        else
+          p.lead.text-center
+            a.btn.btn-primary.btn-lg(href="/users/login", role="button") Login
+          p.lead.text-center
+            a.btn.btn-primary.btn-lg(href="/users/register", role="button") Register           

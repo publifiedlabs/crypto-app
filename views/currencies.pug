@@ -1,0 +1,31 @@
+extends layout
+
+block content
+        form(method='POST', action='/users/createCurrency', name='currencyType').row
+                div#form-group.col-sm-4
+                        select.select.form-control.input-lg(name='currencyType')
+                                option(value='XRP') XRP
+                                option(value='ETH') ETH
+                                option(value='BTC') BTC
+                                option(value='XMR') XMR
+                                option(value='XLM') XLM
+                                option(value='LTC') LTC
+                                option(value='DRGN') DRGN
+                                option(value='BCH') BCH
+                                option(value='ADA') ADA
+                                input.btn.btn-block.btn-primary(type='submit', value='Create')
+        br
+        div.container
+                div.row
+                        each crypto in cryptos
+                                div.col-sm-4.pbf-crypto-container
+                                        form(method='POST', action='/users/currencies/'+crypto.id)
+                                                h2.pbfCurrencyType= crypto.currency
+                                                input.form-control-lg(id=crypto.currency+'USDAMT', name='amount', type='number', step='.01', value=crypto.amount)
+                                                h3 Market Value: ($)
+                                                p.h4.text-warning(id=crypto.currency+'USDVAL')
+                                                h3 Total Value: ($)
+                                                p.h1.text-success.font-weight-bold(id=crypto.currency+'USDTOTAL')
+                                                hr
+                                                input#pbf-update.btn.btn-primary(type='submit', value='Update')
+                                                a.btn.btn-danger(href='/users/delete/' + crypto.id) Delete

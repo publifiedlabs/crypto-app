@@ -1,0 +1,29 @@
+{
+  "name": "cryptocalc-1.0",
+  "version": "1.0.0",
+  "description": "This is a calculator that will store the amount of crypto currency you have and convert it to USD so you can always know the worth of your crypto currencies.",
+  "author": "Andrew Lee",
+  "license": "Apache License 2.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "~1.18.2",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "dotenv": "^5.0.0",
+    "express": "~4.15.5",
+    "express-flash-messages": "^0.1.1",
+    "express-mysql-session": "^1.2.3",
+    "express-session": "^1.15.6",
+    "express-validator": "^5.0.0",
+    "morgan": "~1.9.0",
+    "mysql": "^2.15.0",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
+    "pug": "2.0.0-beta11",
+    "serve-favicon": "~2.4.5"
+  }
+}

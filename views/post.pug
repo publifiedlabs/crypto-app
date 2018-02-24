@@ -1,0 +1,15 @@
+extends layout
+
+block content
+    ul.list-group
+        each result in posts
+            li.list-group-item
+                h1 #{result.title}
+                small
+                    p created: #{result.createdOn}
+                p by: #{result.name}
+                p #{result.body}
+                each post in postID
+                    if post.author == user.user_id
+                        a.btn.btn-primary.float-left(href='/posts/update/' + post.id) Update
+                        a.btn.btn-danger.float-right(href='/posts/delete/' + post.id) Delete

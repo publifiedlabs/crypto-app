@@ -3,9 +3,8 @@ const router = express.Router();
 const expressValidator = require('express-validator');
 
 // Database Init
-const mysql = require('mysql');
-const config = require('../config/database');
-const db = mysql.createConnection(config);
+const DBConfig = require('../config/database');
+let db = DBConfig.db;
 
 // Login/Register Setup
 const passport = require('passport');
@@ -51,18 +50,25 @@ router.post('/register', (req, res, next) => {
     let password = req.body.password;
 
     bcrypt.hash(password, saltRounds, function(err, hash) {
-      let sql = `INSERT INTO users(name, email, username, password) VALUES(?, ?, ?, ?)`;
-      let query = db.query(sql, [name, email, username, hash], (error, result, fields) => {
-        if(error) throw error;
-        // CHANGE THIS WITH PROMISES TO CLEAN UP THE CODE
-          db.query('SELECT LAST_INSERT_ID() as user_id', (error, results, fields) => {
-            if(error) throw error;
-                const user_id = results[0];
-                req.login(user_id, (err) => {
-                res.redirect('/');
+      let registerUser = `INSERT INTO users(name, email, username, password) VALUES(?, ?, ?, ?)`;
+      let selectLastUser = `SELECT LAST_INSERT_ID() as user_id`;
+      let lastUser;
+      DBConfig.Database.execute(DBConfig.config,
+        db => db.query(registerUser, [name, email, username, hash])
+        .then(() => {
+          return db.query(selectLastUser);
+        })
+        .then(rows => {
+          lastUser = rows;
+        }).then(() => {
+            const user_id = lastUser[0];
+            req.login(user_id, () => {
+              res.redirect('/');
             });
-          });
-      });
+        }).catch(err => {
+            if(err)
+              console.error('You Have An Error:::', err);
+      }));
     });
   }
 });
@@ -115,13 +121,21 @@ passport.deserializeUser((user_id, done) => {
 
 // Get Profile
 router.get('/profile', authenticationMiddleware(), (req, res, next) => {
-  let sql = `SELECT id, name, email, username FROM users WHERE users.id = ${req.user.user_id}`
-  let query = db.query(sql, (error, user) => {
-    res.render('profile', {
-      title: 'Profile',
-      users: user
-  });
-  });
+  let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ${req.user.user_id}`
+  let user;
+  DBConfig.Database.execute(DBConfig.config,
+    db => db.query(userInfo)
+    .then(rows => {
+      user = rows;
+    }).then(() => {
+      res.render('profile', {
+        title: 'Profile',
+        users: user
+      });
+    }).catch(err => {
+      if(err)
+        console.error('You Have An Error:::', err);
+  }));
 });
 
 // Update Profile
@@ -129,11 +143,15 @@ router.post('/update/:id', (req, res, next) => {
   let newName = req.body.name;
   let newEmail = req.body.email;
   let newUsername = req.body.username;
-  let sql = `UPDATE users SET name = '${newName}', email = '${newEmail}', username = '${newUsername}' WHERE id = ${req.params.id}`;
-  let query = db.query(sql, (error) => {
-    if(error) throw error;
-    res.redirect('/users/profile');
-  });
+  let updateUser = `UPDATE users SET name = '${newName}', email = '${newEmail}', username = '${newUsername}' WHERE id = ${req.params.id}`;
+  DBConfig.Database.execute(DBConfig.config,
+    db => db.query(updateUser)
+    .then(() => {
+      res.redirect('/users/profile');
+  }).catch(err => {
+      if(err)
+        console.error('You Have An Error:::', err);
+  }));
 });
 
 /***************************/
@@ -142,13 +160,21 @@ router.post('/update/:id', (req, res, next) => {
 
 // Get Currencies
 router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
-  let sql = `SELECT * FROM ledgers WHERE ledgers.author = ${req.user.user_id} ORDER BY createdOn DESC`;
-  let query = db.query(sql, (error, cryptos) => {
-    res.render('currencies', {
-      cryptos: cryptos,
-      title: 'Currencies'
-    });
-  });
+  let getCurrencies = `SELECT * FROM ledgers WHERE ledgers.author = ${req.user.user_id} ORDER BY createdOn DESC`;
+  let cryptos;
+  DBConfig.Database.execute(DBConfig.config,
+    db => db.query(getCurrencies)
+    .then(rows => {
+      cryptos = rows;
+    }).then(() => {
+      res.render('currencies', {
+        title: 'Currencies',
+        cryptos: cryptos
+      });
+  }).catch(err => {
+      if(err)
+        console.error('You Have An Error:::', err);
+  }));
 });
 
 // Create Currency
@@ -156,47 +182,61 @@ router.post('/createCurrency', (req, res, next) => {
   let amount = 0;
   let author = req.user.user_id;
   let currency = req.body.currencyType;
-  let sql = `INSERT INTO ledgers(amount, author, currency) VALUES (?, ?, ?)`;
-    let query = db.query(sql, [amount, author, currency], (error) => {
-      if(error) {
+  let createCurrency = `INSERT INTO ledgers(amount, author, currency) VALUES (?, ?, ?)`;
+  DBConfig.Database.execute(DBConfig.config,
+    db => db.query(createCurrency, [amount, author, currency])
+    .then(() => {
+      res.redirect('/users/currencies');
+    }).catch(err => {
+      if(err)
+        console.error('You Have An Error:::', err);
         res.redirect('/users/currencies');
-      } else {
-        res.redirect('/users/currencies');
-      }
-  });
+  }));
 });
 
 // Update Currency
 router.post('/currencies/:id', (req, res, next) => {
   let amount = req.body.amount;
-  let sql = `SELECT * FROM ledgers WHERE ledgers.id = ${req.params.id}`;
-  let query = db.query(sql, (error, result) => {
-    if(error) throw error;
-    if(result[0].author != req.user.user_id) {
-      res.send('You can not delete this ledger');
-    } else {
-      db.query(`UPDATE ledgers SET amount = '${amount}' WHERE id = ${req.params.id}`, (error) => {
-        if(error) throw error;
-        res.redirect('/users/currencies');
-      });      
-    }
-  });
+  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ${req.params.id}`;
+  let updateCurrency = `UPDATE ledgers SET amount = '${amount}' WHERE id = ${req.params.id}`;
+  let currencyResult;
+  DBConfig.Database.execute(DBConfig.config,
+    db => db.query(selectCurrency)
+    .then(rows => {
+      currencyResult = rows;
+      if(currencyResult[0].author != req.user.user_id) {
+        res.send('You can not update this ledger');
+      } else {
+        return db.query(updateCurrency);
+      }
+    }).then(() => {
+      res.redirect('/users/currencies');
+    }).catch(err => {
+      if(err)
+        console.error('You Have An Error:::', err);
+  }));
 });
 
 // Delete Currency
 router.get('/delete/:id', (req, res, next) => {
-  let sql = `SELECT * FROM ledgers WHERE ledgers.id = ${req.params.id}`;
-  let query = db.query(sql, (error, result) => {
-    if(error) throw error;
-    if(result[0].author != req.user.user_id) {
-      res.send('You can not delete this ledger');
-    } else {
-      db.query(`DELETE FROM ledgers WHERE id = ${req.params.id}`, (error) => {
-        if(error) throw error;
+  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ${req.params.id}`;
+  let deleteCurrency = `DELETE FROM ledgers WHERE id = ${req.params.id}`;
+  let currencyResult;
+  DBConfig.Database.execute(DBConfig.config,
+    db => db.query(selectCurrency)
+    .then(rows => {
+      currencyResult = rows;
+      if(currencyResult[0].author != req.user.user_id) {
+        res.send('You can not delete this ledger');
+      } else {
+        return db.query(deleteCurrency);
+      }
+    }).then(() => {
         res.redirect('/users/currencies');
-      });      
-    }
-  });
+    }).catch(err => {
+        if(err)
+          console.error('You Have An Error:::', err);
+  }));
 });
 
 function authenticationMiddleware() {

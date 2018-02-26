@@ -12,14 +12,9 @@ const app = express();
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 // Database Init
-require('dotenv').config();
-const mysql = require('mysql');
-const config = require('./config/database');
-const db = mysql.createConnection(config);
-db.connect((error) => {
-  if(error) throw error;
-  console.log('MySql Connected...');
-});
+const DBConfig = require('./config/database');
+let db = DBConfig.db;
+
 // Login/Register Setup
 const passport = require('passport');
 const bcrypt = require('bcryptjs');
@@ -39,7 +34,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // For MySql Express Session
-let options = config;
+let options = DBConfig.config;
 let sessionStore = new MySQLStore(options);
 
 // Express Session
@@ -73,27 +68,27 @@ app.use('/users', users);
 app.use('/posts', posts);
 
 //*** Uncomment to configure database. You can delete this section after DB configuration.
-// const migrateDB = require('./migrations/db-mysql-migrate');
-// app.use('/migrate', migrateDB);
+const migrateDB = require('./migrations/db-mysql-migrate');
+app.use('/migrate', migrateDB);
 
 // Passport Strategy
 passport.use(new LocalStrategy(
   function(username, password, done) {
       db.query('SELECT id, password FROM users WHERE username = ?', [username], (err, results, fields) => {
-          if(err) {done(err)};
-          if(results.length === 0) {
-              done(null, false);
-          } else {
-              const hash = results[0].password.toString();
-              bcrypt.compare(password, hash, (err, response) => {
-                  if(response === true){
-                      return done(null, {user_id: results[0].id});
-                  } else {
-                      return done(null, false);
-                  }
-              });
-          }
-      });
+        if(err) {done(err)};
+        if(results.length === 0) {
+            done(null, false);
+        } else {
+            const hash = results[0].password.toString();
+            bcrypt.compare(password, hash, (err, response) => {
+                if(response === true){
+                    return done(null, {user_id: results[0].id});
+                } else {
+                    return done(null, false);
+                }
+            });
+        }
+    });
   }
 ));
 

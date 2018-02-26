@@ -1,35 +1,52 @@
 const express = require('express');
 const router = express.Router();
+const expressValidator = require('express-validator');
 
 // Database Init
-const mysql = require('mysql');
-const config = require('../config/database');
-const db = mysql.createConnection(config);
+const DBConfig = require('../config/database');
+let db = DBConfig.db;
 
 // Get Posts Page from posts table
 router.get('/', authenticationMiddleware(), (req, res, next) => {
-    let sql = `SELECT * FROM posts ORDER BY createdOn DESC`;
-    let query = db.query(sql, (error, posts) => {
-        db.query(`SELECT id, name FROM users`, (error, users) => {
-            if(error) throw error;
+    let selectPosts = `SELECT * FROM posts ORDER BY createdOn DESC`;
+    let selectUsers = `SELECT id, name FROM users`;
+    let postsResult, usersResult;
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(selectPosts)
+        .then(rows => {
+            postsResult = rows;
+            return db.query(selectUsers);
+        })
+        .then(rows => {
+            usersResult = rows;
+        }).then(() => {
             res.render('posts', {
                 title: 'Posts',
-                posts: posts,
-                users: users
+                posts: postsResult,
+                users: usersResult
             });
-        });
-    });
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 // Get Edit Page
 router.get('/update/:id', authenticationMiddleware(), (req, res, next) => {
-    let sql = `SELECT * FROM posts WHERE id = ${req.params.id}`;
-    let query = db.query(sql, (error, post) => {
-        if(error) throw error;
-        res.render('post-edit', {
-            posts: post
-        });
-    });
+    let selectPost = `SELECT * FROM posts WHERE id = ${req.params.id}`;
+    let postResult;
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(selectPost)
+        .then(rows => {
+            postResult = rows;
+        }).then(() => {
+            res.render('post-edit', {
+                posts: postResult
+            });
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 // Create A Post
@@ -38,59 +55,85 @@ router.post('/', authenticationMiddleware(), (req, res, next) => {
     let title = req.body.title;
     let body = req.body.body;
     let author = req.user.user_id;
-    let sql = `INSERT INTO posts(title, body, author) VALUES(?, ?, ?)`;
-    let query = db.query(sql, [title, body, author], (error) => {
-        if(error) throw error;
-        res.redirect('/posts');
-    });
+    let insertPost = `INSERT INTO posts(title, body, author) VALUES(?, ?, ?)`;
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(insertPost, [title, body, author])
+        .then(() => {
+            res.redirect('/posts');
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 // Read A Post
 router.get('/:id', authenticationMiddleware(), (req, res, next) => {
-    let sql = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
-    let query = db.query(sql, (error, result) => {
-        if(error) throw error;
-        db.query(`SELECT * FROM posts WHERE posts.id = ${req.params.id}`, (error, post) => {
+    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
+    let selectPostID = `SELECT * FROM posts WHERE posts.id = ${req.params.id}`;
+    let postInfo, postID;
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(selectPostInfo)
+        .then(rows => {
+            postInfo = rows;
+            return db.query(selectPostID);
+        })
+        .then(rows => {
+            postID = rows;
+        }).then(() => {
             res.render('post', {
-                posts: result,
-                postID: post
+                posts: postInfo,
+                postID: postID
             });
-        });
-    });
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 // Update A Post
 router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
     let newTitle = req.body.title;
     let newBody = req.body.body;
-    let sql = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
-    let query = db.query(sql, (error, result) => {
-        if(error) throw error;
-        if(result[0].author != req.user.user_id) {
-            res.send('You can not update this post');
-        } else {
-            db.query(`UPDATE posts SET title = '${newTitle}', body = '${newBody}' WHERE id = ${req.params.id}`, (error) => {
-                if(error) throw error;
-                res.redirect('/posts');
-            });
-        }
-    });
+    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
+    let updatePost = `UPDATE posts SET title = '${newTitle}', body = '${newBody}' WHERE id = ${req.params.id}`;
+    let postResult;
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(selectPostInfo)
+        .then(rows => {
+            postResult = rows;
+            if(postResult[0].author != req.user.user_id) {
+                res.send('You can not update this post');
+            } else {
+                return db.query(updatePost);
+            }
+        }).then(() => {
+            res.redirect('/posts');
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 // Delete A Post
 router.get('/delete/:id', authenticationMiddleware(), (req, res, next) => {
-    let sql = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
-    let query = db.query(sql, (error, result) => {
-        if(error) throw error;
-        if(result[0].author != req.user.user_id) {
-            res.send('You can not delete this post');
-        } else {
-            db.query(`DELETE FROM posts WHERE id = ${req.params.id}`, (error) => {
-                if(error) throw error;
-                res.redirect('/posts');
-            });
-        }
-    });
+    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
+    let deletePost = `DELETE FROM posts WHERE id = ${req.params.id}`;
+    let postResult;
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(selectPostInfo)
+        .then(rows => {
+            postResult = rows;
+            if(postResult[0].author != req.user.user_id) {
+                res.send('You can not delete this post');
+            } else {
+                return db.query(deletePost);
+            }
+        }).then(() => {
+            res.redirect('/posts');
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 function authenticationMiddleware() {

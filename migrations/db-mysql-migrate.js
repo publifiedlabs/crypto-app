@@ -4,9 +4,8 @@ const express = require('express');
 const router = express.Router();
 
 // Database Init
-const mysql = require('mysql');
-const config = require('../config/database');
-const db = mysql.createConnection(config);
+const DBConfig = require('../config/database');
+let db = DBConfig.db;
 
 // Migration Page
 router.get('/', (req, res, next) => {
@@ -39,24 +38,28 @@ router.get('/configureDB', (req, res, next) => {
                 PRIMARY KEY(id));`;
     let alterUsersTable = `ALTER TABLE users ADD UNIQUE INDEX(email, username);`;
     let alterLedgersTable = `ALTER TABLE ledgers ADD UNIQUE INDEX(author, currency);`;
-    let query = db.query(usersTable, (error) => {
-        if(error) throw error;
-        db.query(postsTable, (error) => {
-            if(error) throw error;
-            db.query(ledgersTable, (error) => {
-                if(error) throw error;
-                db.query(alterUsersTable, (error) => {
-                    if(error) throw error;
-                    db.query(alterLedgersTable, (error) => {
-                        if(error) throw error;
-                        res.render('db-migrate', {
-                            successMessage: 'Your Database Has Been Configured!'
-                        });
-                    });
-                });
+
+    DBConfig.Database.execute(DBConfig.config,
+        db => db.query(usersTable)
+        .then(() => {
+            return db.query(postsTable);
+        })
+        .then(() => {
+            return db.query(ledgersTable);
+        })
+        .then(() => {
+            return db.query(alterUsersTable);
+        })
+        .then(() => {
+            return db.query(alterLedgersTable);
+        }).then(() => {
+            res.render('db-migrate', {
+                successMessage: 'Your Database Has Been Configured!'
             });
-        });
-    });
+        }).catch(err => {
+            if(err)
+                console.error('You Have An Error:::', err);
+    }));
 });
 
 module.exports = router;

@@ -3,6 +3,10 @@ extends layout
 block content
         h1 Update Post
         hr
+        if errors
+            ul.list-group
+                each error in errors
+                    li.list-group-item= error.msg
         each post in posts
             form(method='POST', action='/posts/update/' + post.id)
                 #form-group 

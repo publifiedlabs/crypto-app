@@ -3,14 +3,18 @@ extends layout
 block content
         h1 Add A Post
         hr
+        if errors
+            ul.list-group
+                each error in errors
+                    li.list-group-item= error.msg
         form(method='POST', action='/posts')
             #form-group
                 label Title
-                input.form-control(name='title', type='text')
+                input.form-control(name='title', type='text', value=title)
             br
             #form-group
                 label Body
-                textarea.form-control(name='body')
+                textarea.form-control(name='body', value=body)
                 br
                 input.btn.btn-primary(type='submit', value='Submit')
         br

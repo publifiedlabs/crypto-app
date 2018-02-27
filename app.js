@@ -49,7 +49,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 // Express Flash Messages -- CURRENTLY NOT IN USE, HAVING TROUBLE WITH SESSION STORAGE
-app.use(flash())
+app.use(flash());
 
 // Global Objects
 app.use((req, res, next) => {
@@ -68,8 +68,8 @@ app.use('/users', users);
 app.use('/posts', posts);
 
 //*** Uncomment to configure database. You can delete this section after DB configuration.
-const migrateDB = require('./migrations/db-mysql-migrate');
-app.use('/migrate', migrateDB);
+// const migrateDB = require('./migrations/db-mysql-migrate');
+// app.use('/migrate', migrateDB);
 
 // Passport Strategy
 passport.use(new LocalStrategy(

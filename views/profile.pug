@@ -1,6 +1,10 @@
 extends layout
 
 block content
+        if errors
+                ul.list-group
+                each error in errors
+                        li.list-group-item= error.msg
         each user in users
                 h1= title
                 form(method='POST', action='/users/update/' + user.id)

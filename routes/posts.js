@@ -32,10 +32,11 @@ router.get('/', authenticationMiddleware(), (req, res, next) => {
 
 // Get Edit Page
 router.get('/update/:id', authenticationMiddleware(), (req, res, next) => {
-    let selectPost = `SELECT * FROM posts WHERE id = ${req.params.id}`;
+    let id = req.params.id;
+    let selectPost = `SELECT * FROM posts WHERE id = ?`;
     let postResult;
     DBConfig.Database.execute(DBConfig.config,
-        db => db.query(selectPost)
+        db => db.query(selectPost, [id])
         .then(rows => {
             postResult = rows;
         }).then(() => {
@@ -102,14 +103,15 @@ router.post('/', authenticationMiddleware(), (req, res, next) => {
 
 // Read A Post
 router.get('/:id', authenticationMiddleware(), (req, res, next) => {
-    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
-    let selectPostID = `SELECT * FROM posts WHERE posts.id = ${req.params.id}`;
+    let id = req.params.id;
+    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ?`;
+    let selectPostID = `SELECT * FROM posts WHERE posts.id = ?`;
     let postInfo, postID;
     DBConfig.Database.execute(DBConfig.config,
-        db => db.query(selectPostInfo)
+        db => db.query(selectPostInfo, [id])
         .then(rows => {
             postInfo = rows;
-            return db.query(selectPostID);
+            return db.query(selectPostID, [id]);
         })
         .then(rows => {
             postID = rows;
@@ -137,10 +139,11 @@ router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
     // check for errors
     const errors = req.validationErrors();
     if(errors) {
-        let selectPost = `SELECT * FROM posts WHERE id = ${req.params.id}`;
+        let id = req.params.id;
+        let selectPost = `SELECT * FROM posts WHERE id = ?`;
         let postResult;
         DBConfig.Database.execute(DBConfig.config,
-            db => db.query(selectPost)
+            db => db.query(selectPost, [id])
             .then(rows => {
                 postResult = rows;
             }).then(() => {
@@ -155,17 +158,18 @@ router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
     } else {
         let newTitle = req.body.title;
         let newBody = req.body.body;
-        let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
-        let updatePost = `UPDATE posts SET title = '${newTitle}', body = '${newBody}' WHERE id = ${req.params.id}`;
+        let id = req.params.id;
+        let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ?`;
+        let updatePost = `UPDATE posts SET title = ?, body = ? WHERE id = ?`;
         let postResult;
         DBConfig.Database.execute(DBConfig.config,
-            db => db.query(selectPostInfo)
+            db => db.query(selectPostInfo, [id])
             .then(rows => {
                 postResult = rows;
                 if(postResult[0].author != req.user.user_id) {
                     res.send('You can not update this post');
                 } else {
-                    return db.query(updatePost);
+                    return db.query(updatePost, [newTitle, newBody, id]);
                 }
             }).then(() => {
                 res.redirect('/posts');
@@ -178,17 +182,18 @@ router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
 
 // Delete A Post
 router.get('/delete/:id', authenticationMiddleware(), (req, res, next) => {
-    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ${req.params.id}`;
-    let deletePost = `DELETE FROM posts WHERE id = ${req.params.id}`;
+    let id = req.params.id;
+    let selectPostInfo = `SELECT * FROM posts INNER JOIN users ON posts.author = users.id WHERE posts.id = ?`;
+    let deletePost = `DELETE FROM posts WHERE id = ?`;
     let postResult;
     DBConfig.Database.execute(DBConfig.config,
-        db => db.query(selectPostInfo)
+        db => db.query(selectPostInfo, [id])
         .then(rows => {
             postResult = rows;
             if(postResult[0].author != req.user.user_id) {
                 res.send('You can not delete this post');
             } else {
-                return db.query(deletePost);
+                return db.query(deletePost, [id]);
             }
         }).then(() => {
             res.redirect('/posts');

@@ -8,10 +8,11 @@ let db = DBConfig.db;
 /* GET home page. */
 router.get('/', function(req, res, next) {
   if(req.isAuthenticated()){
-    let selectUser = `SELECT name FROM users WHERE id = ${req.user.user_id}`;
+    let userId = req.user.user_id;
+    let selectUser = `SELECT name FROM users WHERE id = ?`;
     let selectedUser;
     DBConfig.Database.execute(DBConfig.config,
-      db => db.query(selectUser)
+      db => db.query(selectUser, userId)
         .then(rows => {
           selectedUser = rows;
         }).then(() => {

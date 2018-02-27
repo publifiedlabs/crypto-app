@@ -137,10 +137,11 @@ passport.deserializeUser((user_id, done) => {
 
 // Get Profile
 router.get('/profile', authenticationMiddleware(), (req, res, next) => {
-  let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ${req.user.user_id}`
+  let id = req.user.user_id;
+  let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ?`
   let user;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(userInfo)
+    db => db.query(userInfo, [id])
     .then(rows => {
       user = rows;
     }).then(() => {
@@ -172,10 +173,11 @@ router.post('/update/:id', (req, res, next) => {
   // check for errors
   const errors = req.validationErrors();
   if(errors) {
-    let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ${req.user.user_id}`
+    let id = req.user.user_id;
+    let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ?`
     let user;
     DBConfig.Database.execute(DBConfig.config,
-      db => db.query(userInfo)
+      db => db.query(userInfo, [id])
       .then(rows => {
         user = rows;
       }).then(() => {
@@ -192,9 +194,10 @@ router.post('/update/:id', (req, res, next) => {
     let newName = req.body.name;
     let newEmail = req.body.email;
     let newUsername = req.body.username;
-    let updateUser = `UPDATE users SET name = '${newName}', email = '${newEmail}', username = '${newUsername}' WHERE id = ${req.params.id}`;
+    let id = req.params.id;
+    let updateUser = `UPDATE users SET name = ?, email = ?, username = ? WHERE id = ?`;
     DBConfig.Database.execute(DBConfig.config,
-      db => db.query(updateUser)
+      db => db.query(updateUser, [newName, newEmail, newUsername, id])
       .then(() => {
         res.redirect('/users/profile');
     }).catch(err => {
@@ -210,10 +213,11 @@ router.post('/update/:id', (req, res, next) => {
 
 // Get Currencies
 router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
-  let getCurrencies = `SELECT * FROM ledgers WHERE ledgers.author = ${req.user.user_id} ORDER BY createdOn DESC`;
+  let id = req.user.user_id;
+  let getCurrencies = `SELECT * FROM ledgers WHERE ledgers.author = ? ORDER BY createdOn DESC`;
   let cryptos;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(getCurrencies)
+    db => db.query(getCurrencies, [id])
     .then(rows => {
       cryptos = rows;
     }).then(() => {
@@ -250,18 +254,19 @@ router.post('/createCurrency', (req, res, next) => {
 router.post('/currencies/:id', (req, res, next) => {
   req.sanitize('amount').trim();
   req.sanitize('amount').escape();
+  let id = req.params.id;
   let amount = req.body.amount;
-  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ${req.params.id}`;
-  let updateCurrency = `UPDATE ledgers SET amount = '${amount}' WHERE id = ${req.params.id}`;
+  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ?`;
+  let updateCurrency = `UPDATE ledgers SET amount = ? WHERE id = ?`;
   let currencyResult;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(selectCurrency)
+    db => db.query(selectCurrency, [id])
     .then(rows => {
       currencyResult = rows;
       if(currencyResult[0].author != req.user.user_id) {
         res.send('You can not update this ledger');
       } else {
-        return db.query(updateCurrency);
+        return db.query(updateCurrency, [amount, id]);
       }
     }).then(() => {
       res.redirect('/users/currencies');
@@ -274,17 +279,18 @@ router.post('/currencies/:id', (req, res, next) => {
 
 // Delete Currency
 router.get('/delete/:id', (req, res, next) => {
-  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ${req.params.id}`;
-  let deleteCurrency = `DELETE FROM ledgers WHERE id = ${req.params.id}`;
+  let id = req.params.id;
+  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ?`;
+  let deleteCurrency = `DELETE FROM ledgers WHERE id = ?`;
   let currencyResult;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(selectCurrency)
+    db => db.query(selectCurrency, [id])
     .then(rows => {
       currencyResult = rows;
       if(currencyResult[0].author != req.user.user_id) {
         res.send('You can not delete this ledger');
       } else {
-        return db.query(deleteCurrency);
+        return db.query(deleteCurrency, [id]);
       }
     }).then(() => {
         res.redirect('/users/currencies');

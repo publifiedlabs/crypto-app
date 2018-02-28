@@ -8,6 +8,7 @@ block content
                 each error in errors
                     li.list-group-item= error.msg
         form(method='POST', action='/posts')
+            input.form-control(name='_csrf', type='hidden', value=csrfToken)
             #form-group
                 label Title
                 input.form-control(name='title', type='text', value=title)

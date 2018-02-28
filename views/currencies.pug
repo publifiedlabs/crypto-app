@@ -2,6 +2,7 @@ extends layout
 
 block content
         form(method='POST', action='/users/createCurrency', name='currencyType').row
+                input.form-control(name='_csrf', type='hidden', value=csrfToken)
                 div#form-group.col-sm-4
                         select.select.form-control.input-lg(name='currencyType')
                                 option(value='XRP') XRP
@@ -20,6 +21,7 @@ block content
                         each crypto in cryptos
                                 div.col-sm-4.pbf-crypto-container
                                         form(method='POST', action='/users/currencies/'+crypto.id)
+                                                input.form-control(name='_csrf', type='hidden', value=csrfToken)
                                                 h2.pbfCurrencyType= crypto.currency
                                                 input.form-control-lg(id=crypto.currency+'USDAMT', name='amount', type='number', step='.01', value=crypto.amount)
                                                 h3 Market Value: ($)

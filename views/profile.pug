@@ -8,6 +8,7 @@ block content
         each user in users
                 h1= title
                 form(method='POST', action='/users/update/' + user.id)
+                        input.form-control(name='_csrf', type='hidden', value=csrfToken)
                         #form-group
                         label ID
                         input.form-control(name='id', type='number', value=user.id, readonly)

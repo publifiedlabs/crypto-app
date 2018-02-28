@@ -9,6 +9,7 @@ block content
                     li.list-group-item= error.msg
         each post in posts
             form(method='POST', action='/posts/update/' + post.id)
+                input.form-control(name='_csrf', type='hidden', value=csrfToken)
                 #form-group 
                     label Title
                     input.form-control(name='title', type='text', value=post.title)

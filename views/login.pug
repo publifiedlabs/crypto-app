@@ -9,6 +9,7 @@ block content
                     li.list-group-item= error.msg
         br
         form(method='POST', action='/users/login')
+            input.form-control(name='_csrf', type='hidden', value=csrfToken)
             #form-group
                 label Username
                 input.form-control(name='username', type='text')

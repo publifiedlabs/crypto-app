@@ -6,8 +6,12 @@ const expressValidator = require('express-validator');
 const DBConfig = require('../config/database');
 let db = DBConfig.db;
 
+// CSURF Setup
+const csurf = require('csurf');
+const csrfProtection = csurf({ cookie: true })
+
 // Get Posts Page from posts table
-router.get('/', authenticationMiddleware(), (req, res, next) => {
+router.get('/', authenticationMiddleware(), csrfProtection, (req, res, next) => {
     let preparedQuery = {
         posts: 'posts',
         createdOn: 'createdOn',
@@ -29,7 +33,8 @@ router.get('/', authenticationMiddleware(), (req, res, next) => {
         }).then(() => {
             res.render('posts', {
                 posts: postsResult,
-                users: usersResult
+                users: usersResult,
+                csrfToken: req.csrfToken()
             });
         }).catch(err => {
             if(err)
@@ -38,7 +43,7 @@ router.get('/', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Get Edit Page
-router.get('/update/:id', authenticationMiddleware(), (req, res, next) => {
+router.get('/update/:id', authenticationMiddleware(), csrfProtection, (req, res, next) => {
     let preparedQuery = {
         posts: 'posts',
         reqId: req.params.id
@@ -51,7 +56,8 @@ router.get('/update/:id', authenticationMiddleware(), (req, res, next) => {
             postResult = rows;
         }).then(() => {
             res.render('post-edit', {
-                posts: postResult
+                posts: postResult,
+                csrfToken: req.csrfToken()
             });
         }).catch(err => {
             if(err)
@@ -60,7 +66,7 @@ router.get('/update/:id', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Create A Post
-router.post('/', authenticationMiddleware(), (req, res, next) => {
+router.post('/', authenticationMiddleware(), csrfProtection, (req, res, next) => {
     req.checkBody('title', 'Title field can not be empty.').notEmpty();
     req.checkBody('title', 'Title field must be atleast 2 characters').len(2, 255);
     req.checkBody('body', 'Body field can not be empty.').notEmpty();
@@ -99,7 +105,8 @@ router.post('/', authenticationMiddleware(), (req, res, next) => {
                     users: usersResult,
                     errors: errors,
                     title: req.body.title,
-                    body: req.body.body
+                    body: req.body.body,
+                    csrfToken: req.csrfToken()
                 });
             }).catch(err => {
                 if(err)
@@ -119,10 +126,11 @@ router.post('/', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Read A Post
-router.get('/:id', authenticationMiddleware(), (req, res, next) => {
+router.get('/:id', authenticationMiddleware(), csrfProtection, (req, res, next) => {
     let preparedQuery = {
         title: 'title',
         body: 'body',
+        id: 'id',
         author: 'author',
         createdOn: 'createdOn',
         name: 'name',
@@ -133,20 +141,21 @@ router.get('/:id', authenticationMiddleware(), (req, res, next) => {
         reqId: req.params.id
     }
     let selectPostInfo = `SELECT ??, ??, ??, ??, ??, ??, ?? FROM ?? INNER JOIN ?? ON posts.author = users.id WHERE posts.id = ?`;
-    let selectPostID = `SELECT * FROM ?? WHERE posts.id = ?`;
+    let selectPostID = `SELECT ??, ?? FROM ?? WHERE posts.id = ?`;
     let postInfo, postID;
     DBConfig.Database.execute(DBConfig.config,
         db => db.query(selectPostInfo, [preparedQuery.title, preparedQuery.body, preparedQuery.author, preparedQuery.createdOn, preparedQuery.name, preparedQuery.email, preparedQuery.username, preparedQuery.posts, preparedQuery.users, preparedQuery.reqId])
         .then(rows => {
             postInfo = rows;
-            return db.query(selectPostID, [preparedQuery.posts, preparedQuery.reqId]);
+            return db.query(selectPostID, [preparedQuery.id, preparedQuery.author,preparedQuery.posts, preparedQuery.reqId]);
         })
         .then(rows => {
             postID = rows;
         }).then(() => {
             res.render('post', {
                 posts: postInfo,
-                postID: postID
+                postID: postID,
+                csrfToken: req.csrfToken()
             });
         }).catch(err => {
             if(err)
@@ -155,7 +164,7 @@ router.get('/:id', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Update A Post
-router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
+router.post('/update/:id', authenticationMiddleware(), csrfProtection, (req, res, next) => {
     req.checkBody('title', 'Title field can not be empty.').notEmpty();
     req.checkBody('title', 'Title field must be atleast 2 characters').len(2, 255);
     req.checkBody('body', 'Body field can not be empty.').notEmpty();
@@ -167,6 +176,13 @@ router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
     let preparedQuery = {
         posts: 'posts',
         users: 'users',
+        title: 'title',
+        body: 'body',
+        author: 'author',
+        createdOn: 'createdOn',
+        name: 'name',
+        email: 'email',
+        username: 'username',
         reqId: req.params.id,
         newTitle: req.body.title,
         newBody: req.body.body
@@ -183,18 +199,19 @@ router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
             }).then(() => {
                 res.render('post-edit', {
                     posts: postResult,
-                    errors: errors
+                    errors: errors,
+                    csrfToken: req.csrfToken()
                 });
             }).catch(err => {
                 if(err)
                     console.error('You Have An Error:::', err);
         }));
     } else {
-        let selectPostInfo = `SELECT * FROM ?? INNER JOIN ?? ON posts.author = users.id WHERE posts.id = ?`;
+        let selectPostInfo = `SELECT ??, ??, ??, ??, ??, ??, ?? FROM ?? INNER JOIN ?? ON posts.author = users.id WHERE posts.id = ?`;
         let updatePost = `UPDATE ?? SET title = ?, body = ? WHERE id = ?`;
         let postResult;
         DBConfig.Database.execute(DBConfig.config,
-            db => db.query(selectPostInfo, [preparedQuery.posts, preparedQuery.users, preparedQuery.reqId])
+            db => db.query(selectPostInfo, [preparedQuery.title, preparedQuery.body, preparedQuery.author, preparedQuery.createdOn, preparedQuery.name, preparedQuery.email, preparedQuery.username ,preparedQuery.posts, preparedQuery.users, preparedQuery.reqId])
             .then(rows => {
                 postResult = rows;
                 if(postResult[0].author != req.user.user_id) {
@@ -212,17 +229,24 @@ router.post('/update/:id', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Delete A Post
-router.get('/delete/:id', authenticationMiddleware(), (req, res, next) => {
+router.get('/delete/:id', authenticationMiddleware(), csrfProtection, (req, res, next) => {
     let preparedQuery = {
         posts: 'posts',
         users: 'users',
+        title: 'title',
+        body: 'body',
+        author: 'author',
+        createdOn: 'createdOn',
+        name: 'name',
+        email: 'email',
+        username: 'username',
         reqId: req.params.id
     }
-    let selectPostInfo = `SELECT * FROM ?? INNER JOIN ?? ON posts.author = users.id WHERE posts.id = ?`;
+    let selectPostInfo = `SELECT ??, ??, ??, ??, ??, ??, ?? FROM ?? INNER JOIN ?? ON posts.author = users.id WHERE posts.id = ?`;
     let deletePost = `DELETE FROM ?? WHERE id = ?`;
     let postResult;
     DBConfig.Database.execute(DBConfig.config,
-        db => db.query(selectPostInfo, [preparedQuery.posts, preparedQuery.users, preparedQuery.reqId])
+        db => db.query(selectPostInfo, [preparedQuery.title, preparedQuery.body, preparedQuery.author, preparedQuery.createdOn, preparedQuery.name, preparedQuery.email, preparedQuery.username,preparedQuery.posts, preparedQuery.users, preparedQuery.reqId])
         .then(rows => {
             postResult = rows;
             if(postResult[0].author != req.user.user_id) {

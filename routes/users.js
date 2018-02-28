@@ -11,20 +11,22 @@ const passport = require('passport');
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 
+// CSURF Setup
+const csurf = require('csurf');
+const csrfProtection = csurf({ cookie: true })
+
 /****************************/
 /***** LOGIN & REGISTER *****/
 /****************************/
 
 // Register Page
-router.get('/register', function(req, res, next) {
-    res.render('register');
+router.get('/register', csrfProtection, function(req, res, next) {
+    res.render('register', {
+      csrfToken: req.csrfToken()
+    });
 });
 
-router.get('/register', function(req, res, next) {
-  res.render('register');
-});
-
-router.post('/register', (req, res, next) => {
+router.post('/register', csrfProtection, (req, res, next) => {
   req.checkBody('name', 'Name field can not be empty.').notEmpty();
   req.checkBody('name', 'Name field must be atleast 2 characters').len(2, 255);
   req.checkBody('email', 'The email you entered is not valid.').isEmail();
@@ -57,7 +59,8 @@ router.post('/register', (req, res, next) => {
       errors: errors,
       name: req.body.name,
       email: req.body.email,
-      username: req.body.username
+      username: req.body.username,
+      csrfToken: req.csrfToken()
     });
   } else {
     bcrypt.hash(password, saltRounds, function(err, hash) {
@@ -85,11 +88,13 @@ router.post('/register', (req, res, next) => {
 });
 
 // Login Setup
-router.get('/login', (req, res) => {
-  res.render('login');
+router.get('/login', csrfProtection, (req, res) => {
+  res.render('login', {
+    csrfToken: req.csrfToken()
+  });
 });
 
-router.post('/login', (req, res, next) => {
+router.post('/login', csrfProtection, (req, res, next) => {
   req.checkBody('username', 'Username field can not be empty.').notEmpty();
   req.checkBody('password', 'Password field can not be empty.').notEmpty();
 
@@ -102,10 +107,11 @@ router.post('/login', (req, res, next) => {
     const errors = req.validationErrors();
     if(errors) {
       res.render('login', {
-        errors: errors
+        errors: errors,
+        csrfToken: req.csrfToken()
       });
     } else {
-      router.post('/login', passport.authenticate('local', {
+      router.post('/login', csrfProtection, passport.authenticate('local', {
         successRedirect: '/',
         failureRedirect: '/users/login'
       }));
@@ -118,7 +124,7 @@ router.post('/login', (req, res, next) => {
 /******************/
 
 // Logout Page
-router.get('/logout', (req, res) => {
+router.get('/logout', csrfProtection, (req, res) => {
   req.logout();
   req.session.destroy();
   res.redirect('/users/login');
@@ -137,7 +143,7 @@ passport.deserializeUser((user_id, done) => {
 /************************/
 
 // Get Profile
-router.get('/profile', authenticationMiddleware(), (req, res, next) => {
+router.get('/profile', authenticationMiddleware(), csrfProtection, (req, res, next) => {
   let preparedQuery = {
     id: 'id',
     name: 'name',
@@ -155,7 +161,8 @@ router.get('/profile', authenticationMiddleware(), (req, res, next) => {
     }).then(() => {
       res.render('profile', {
         title: 'Profile',
-        users: user
+        users: user,
+        csrfToken: req.csrfToken()
       });
     }).catch(err => {
       if(err)
@@ -164,7 +171,7 @@ router.get('/profile', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Update Profile
-router.post('/update/:id', (req, res, next) => {
+router.post('/update/:id', csrfProtection, (req, res, next) => {
   req.checkBody('name', 'Name field can not be empty.').notEmpty();
   req.checkBody('name', 'Name field must be atleast 2 characters').len(2, 255);
   req.checkBody('email', 'The email you entered is not valid.').isEmail();
@@ -203,7 +210,8 @@ router.post('/update/:id', (req, res, next) => {
         res.render('profile', {
           title: 'Profile',
           users: user,
-          errors: errors
+          errors: errors,
+          csrfToken: req.csrfToken()
         });
       }).catch(err => {
         if(err)
@@ -227,7 +235,7 @@ router.post('/update/:id', (req, res, next) => {
 /***************************/
 
 // Get Currencies
-router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
+router.get('/currencies', authenticationMiddleware(), csrfProtection, (req, res, next) => {
   let preparedQuery = {
     ledgers: 'ledgers',
     createdOn: 'createdOn',
@@ -242,7 +250,8 @@ router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
     }).then(() => {
       res.render('currencies', {
         title: 'Currencies',
-        cryptos: cryptos
+        cryptos: cryptos,
+        csrfToken: req.csrfToken()
       });
   }).catch(err => {
       if(err)
@@ -251,7 +260,7 @@ router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
 });
 
 // Create Currency
-router.post('/createCurrency', (req, res, next) => {
+router.post('/createCurrency', csrfProtection, (req, res, next) => {
   req.sanitize('currencyType').trim();
   req.sanitize('currencyType').escape();
   let preparedQuery = {
@@ -273,7 +282,7 @@ router.post('/createCurrency', (req, res, next) => {
 });
 
 // Update Currency
-router.post('/currencies/:id', (req, res, next) => {
+router.post('/currencies/:id', csrfProtection, (req, res, next) => {
   req.sanitize('amount').trim();
   req.sanitize('amount').escape();
   let preparedQuery = {
@@ -304,7 +313,7 @@ router.post('/currencies/:id', (req, res, next) => {
 });
 
 // Delete Currency
-router.get('/delete/:id', (req, res, next) => {
+router.get('/delete/:id', csrfProtection, (req, res, next) => {
   let preparedQuery = {
     ledgers: 'ledgers',
     reqId: req.params.id

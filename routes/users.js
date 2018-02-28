@@ -43,7 +43,13 @@ router.post('/register', (req, res, next) => {
   req.sanitize('username').escape();
   req.sanitize('password').trim();
   req.sanitize('password').escape();
-
+  let preparedQuery = {
+    users: 'users',
+    reqName: req.body.name,
+    reqEmail: req.body.email,
+    reqUsername: req.body.username
+  }
+  let password = req.body.password;
   // check for errors
   const errors = req.validationErrors();
   if(errors) {
@@ -54,17 +60,12 @@ router.post('/register', (req, res, next) => {
       username: req.body.username
     });
   } else {
-    let name = req.body.name;
-    let email = req.body.email;
-    let username = req.body.username;
-    let password = req.body.password;
-
     bcrypt.hash(password, saltRounds, function(err, hash) {
-      let registerUser = `INSERT INTO users(name, email, username, password) VALUES(?, ?, ?, ?)`;
+      let registerUser = `INSERT INTO ??(name, email, username, password) VALUES(?, ?, ?, ?)`;
       let selectLastUser = `SELECT LAST_INSERT_ID() as user_id`;
       let lastUser;
       DBConfig.Database.execute(DBConfig.config,
-        db => db.query(registerUser, [name, email, username, hash])
+        db => db.query(registerUser, [preparedQuery.users, preparedQuery.reqName, preparedQuery.reqEmail, preparedQuery.reqUsername, hash])
         .then(() => {
           return db.query(selectLastUser);
         })
@@ -137,11 +138,18 @@ passport.deserializeUser((user_id, done) => {
 
 // Get Profile
 router.get('/profile', authenticationMiddleware(), (req, res, next) => {
-  let id = req.user.user_id;
-  let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ?`
+  let preparedQuery = {
+    id: 'id',
+    name: 'name',
+    email: 'email',
+    username: 'username',
+    users: 'users',
+    reqUserId: req.user.user_id
+  }
+  let userInfo = `SELECT ??, ??, ??, ?? FROM ?? WHERE users.id = ?`
   let user;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(userInfo, [id])
+    db => db.query(userInfo, [preparedQuery.id, preparedQuery.name, preparedQuery.email, preparedQuery.username, preparedQuery.users, preparedQuery.reqUserId])
     .then(rows => {
       user = rows;
     }).then(() => {
@@ -170,14 +178,25 @@ router.post('/update/:id', (req, res, next) => {
   req.sanitize('email').escape();
   req.sanitize('username').trim();
   req.sanitize('username').escape();
+  let preparedQuery = {
+    id: 'id',
+    name: 'name',
+    email: 'email',
+    username: 'username',
+    users: 'users',
+    reqUserId: req.user.user_id,
+    newName: req.body.name,
+    newEmail: req.body.email,
+    newUsername: req.body.username,
+    reqId: req.params.id
+  }
   // check for errors
   const errors = req.validationErrors();
   if(errors) {
-    let id = req.user.user_id;
-    let userInfo = `SELECT id, name, email, username FROM users WHERE users.id = ?`
+    let userInfo = `SELECT ??, ??, ??, ?? FROM ?? WHERE users.id = ?`
     let user;
     DBConfig.Database.execute(DBConfig.config,
-      db => db.query(userInfo, [id])
+      db => db.query(userInfo, [preparedQuery.id, preparedQuery.name, preparedQuery.email, preparedQuery.username, preparedQuery.users, preparedQuery.reqUserId])
       .then(rows => {
         user = rows;
       }).then(() => {
@@ -191,13 +210,9 @@ router.post('/update/:id', (req, res, next) => {
           console.error('You Have An Error:::', err);
     }));
   } else {
-    let newName = req.body.name;
-    let newEmail = req.body.email;
-    let newUsername = req.body.username;
-    let id = req.params.id;
-    let updateUser = `UPDATE users SET name = ?, email = ?, username = ? WHERE id = ?`;
+    let updateUser = `UPDATE ?? SET name = ?, email = ?, username = ? WHERE id = ?`;
     DBConfig.Database.execute(DBConfig.config,
-      db => db.query(updateUser, [newName, newEmail, newUsername, id])
+      db => db.query(updateUser, [preparedQuery.users, preparedQuery.newName, preparedQuery.newEmail, preparedQuery.newUsername, preparedQuery.reqId])
       .then(() => {
         res.redirect('/users/profile');
     }).catch(err => {
@@ -213,11 +228,15 @@ router.post('/update/:id', (req, res, next) => {
 
 // Get Currencies
 router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
-  let id = req.user.user_id;
-  let getCurrencies = `SELECT * FROM ledgers WHERE ledgers.author = ? ORDER BY createdOn DESC`;
+  let preparedQuery = {
+    ledgers: 'ledgers',
+    createdOn: 'createdOn',
+    reqUserId: req.user.user_id
+  }
+  let getCurrencies = `SELECT * FROM ?? WHERE ledgers.author = ? ORDER BY ?? DESC`;
   let cryptos;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(getCurrencies, [id])
+    db => db.query(getCurrencies, [preparedQuery.ledgers, preparedQuery.reqUserId, preparedQuery.createdOn])
     .then(rows => {
       cryptos = rows;
     }).then(() => {
@@ -235,12 +254,15 @@ router.get('/currencies', authenticationMiddleware(), (req, res, next) => {
 router.post('/createCurrency', (req, res, next) => {
   req.sanitize('currencyType').trim();
   req.sanitize('currencyType').escape();
-  let amount = 0;
-  let author = req.user.user_id;
-  let currency = req.body.currencyType;
-  let createCurrency = `INSERT INTO ledgers(amount, author, currency) VALUES (?, ?, ?)`;
+  let preparedQuery = {
+    ledgers: 'ledgers',
+    amount: 0,
+    reqAuthor: req.user.user_id,
+    reqCurrencyType: req.body.currencyType
+  }
+  let createCurrency = `INSERT INTO ??(amount, author, currency) VALUES (?, ?, ?)`;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(createCurrency, [amount, author, currency])
+    db => db.query(createCurrency, [preparedQuery.ledgers, preparedQuery.amount, preparedQuery.reqAuthor, preparedQuery.reqCurrencyType])
     .then(() => {
       res.redirect('/users/currencies');
     }).catch(err => {
@@ -254,19 +276,23 @@ router.post('/createCurrency', (req, res, next) => {
 router.post('/currencies/:id', (req, res, next) => {
   req.sanitize('amount').trim();
   req.sanitize('amount').escape();
-  let id = req.params.id;
-  let amount = req.body.amount;
-  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ?`;
-  let updateCurrency = `UPDATE ledgers SET amount = ? WHERE id = ?`;
+  let preparedQuery = {
+    ledgers: 'ledgers',
+    amount: 'amount',
+    reqAmount: req.body.amount,
+    reqId: req.params.id
+  }
+  let selectCurrency = `SELECT * FROM ?? WHERE ledgers.id = ?`;
+  let updateCurrency = `UPDATE ?? SET ?? = ? WHERE id = ?`;
   let currencyResult;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(selectCurrency, [id])
+    db => db.query(selectCurrency, [preparedQuery.ledgers, preparedQuery.reqId])
     .then(rows => {
       currencyResult = rows;
       if(currencyResult[0].author != req.user.user_id) {
         res.send('You can not update this ledger');
       } else {
-        return db.query(updateCurrency, [amount, id]);
+        return db.query(updateCurrency, [preparedQuery.ledgers, preparedQuery.amount, preparedQuery.reqAmount, preparedQuery.reqId]);
       }
     }).then(() => {
       res.redirect('/users/currencies');
@@ -279,18 +305,21 @@ router.post('/currencies/:id', (req, res, next) => {
 
 // Delete Currency
 router.get('/delete/:id', (req, res, next) => {
-  let id = req.params.id;
-  let selectCurrency = `SELECT * FROM ledgers WHERE ledgers.id = ?`;
-  let deleteCurrency = `DELETE FROM ledgers WHERE id = ?`;
+  let preparedQuery = {
+    ledgers: 'ledgers',
+    reqId: req.params.id
+  }
+  let selectCurrency = `SELECT * FROM ?? WHERE ledgers.id = ?`;
+  let deleteCurrency = `DELETE FROM ?? WHERE id = ?`;
   let currencyResult;
   DBConfig.Database.execute(DBConfig.config,
-    db => db.query(selectCurrency, [id])
+    db => db.query(selectCurrency, [preparedQuery.ledgers, preparedQuery.reqId])
     .then(rows => {
       currencyResult = rows;
       if(currencyResult[0].author != req.user.user_id) {
         res.send('You can not delete this ledger');
       } else {
-        return db.query(deleteCurrency, [id]);
+        return db.query(deleteCurrency, [preparedQuery.ledgers, preparedQuery.reqId]);
       }
     }).then(() => {
         res.redirect('/users/currencies');

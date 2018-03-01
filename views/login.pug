@@ -9,12 +9,12 @@ block content
                     li.list-group-item= error.msg
         br
         form(method='POST', action='/users/login')
-            input.form-control(name='_csrf', type='hidden', value=csrfToken)
+            input.form-control(name='_csrf', type='hidden', autocomplete='off', value=csrfToken)
             #form-group
                 label Username
                 input.form-control(name='username', type='text')
             #form-group
                 label Password
-                input.form-control(name='password', type='password')
+                input.form-control(name='password', type='password', autocomplete='off')
                 br
                 input.btn.btn-primary(type='submit', value='Submit')

@@ -6,8 +6,17 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const expressValidator = require('express-validator');
 const flash = require('express-flash-messages');
+const RateLimit = require('express-rate-limit');
 
 const app = express();
+
+// Express Rate Limit Setup
+const limiter = new RateLimit({
+  windowMs: 15*60*1000,
+  max: 100,
+  delayMs: 0
+});
+app.use(limiter);
 // Sessions Setup
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
@@ -24,7 +33,7 @@ const LocalStrategy = require('passport-local').Strategy;
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -41,8 +50,8 @@ app.use(session({
   secret: 'Jbn6LfM:@a.u%})',
   store: sessionStore,
   resave: false,
-  saveUninitialized: false
-  // cookie: { secure: false }
+  saveUninitialized: false,
+  cookie: { httpOnly: true, secure: false }
 }));
 // Passport Middleware
 app.use(passport.initialize());

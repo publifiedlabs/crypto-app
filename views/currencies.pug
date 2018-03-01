@@ -23,7 +23,7 @@ block content
                                         form(method='POST', action='/users/currencies/'+crypto.id)
                                                 input.form-control(name='_csrf', type='hidden', value=csrfToken)
                                                 h2.pbfCurrencyType= crypto.currency
-                                                input.form-control-lg(id=crypto.currency+'USDAMT', name='amount', type='number', step='.01', value=crypto.amount)
+                                                input.form-control-lg(id=crypto.currency+'USDAMT', name='amount', type='number', step='.01', autocomplete='off', value=crypto.amount)
                                                 h3 Market Value: ($)
                                                 p.h4.text-warning(id=crypto.currency+'USDVAL')
                                                 h3 Total Value: ($)

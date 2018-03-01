@@ -7,13 +7,16 @@ const bodyParser = require('body-parser');
 const expressValidator = require('express-validator');
 const flash = require('express-flash-messages');
 const RateLimit = require('express-rate-limit');
+const helmet = require('helmet')
 
 const app = express();
 
+// Helmet Setup
+app.use(helmet());
 // Express Rate Limit Setup
 const limiter = new RateLimit({
   windowMs: 15*60*1000,
-  max: 100,
+  max: 1000,
   delayMs: 0
 });
 app.use(limiter);
